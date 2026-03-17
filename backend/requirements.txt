@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+ollama
+requests
+pydantic
+python-dotenv
+python-multipart
+pdfplumber
+python-docx
+openpyxl

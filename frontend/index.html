@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B.L.A.S.T. Test Case Generator</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --chat-bg: #161b22;
+            --text-color: #c9d1d9;
+            --accent-color: #58a6ff;
+            --border-color: #30363d;
+            --user-msg-bg: #1f6feb;
+            --ai-msg-bg: #21262d;
+            --success-color: #238636;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            background-color: var(--chat-bg);
+        }
+
+        header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        #chat-window {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 15px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--user-msg-bg);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background-color: var(--ai-msg-bg);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 2px;
+        }
+
+        .ai-message pre {
+            background: #0d1117;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--chat-bg);
+        }
+
+        form {
+            display: flex;
+            gap: 10px;
+            position: relative;
+        }
+
+        textarea {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 15px;
+            border-radius: 8px;
+            resize: none;
+            height: 60px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        button {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #2ea043;
+        }
+
+        button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .loading-dots:after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+
+            0%,
+            20% {
+                content: '.';
+            }
+
+            40% {
+                content: '..';
+            }
+
+            60% {
+                content: '...';
+            }
+
+            80%,
+            100% {
+                content: '';
+            }
+        }
+
+        /* Test Case Styling */
+        .tc-card {
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+
+        .tc-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: #8b949e;
+        }
+
+        .tc-title {
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        .tc-type {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .type-functional {
+            background: rgba(35, 134, 54, 0.2);
+            color: #7ee787;
+        }
+
+        .type-positive {
+            background: rgba(35, 134, 54, 0.2);
+            color: #7ee787;
+        }
+
+        .type-negative {
+            background: rgba(218, 54, 51, 0.2);
+            color: #ff7b72;
+        }
+
+        .type-boundary {
+            background: rgba(136, 87, 255, 0.2);
+            color: #b48eff;
+        }
+
+        .type-edgecase {
+            background: rgba(210, 153, 34, 0.2);
+            color: #d29922;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .export-buttons {
+            display: none;
+            gap: 8px;
+        }
+
+        .export-buttons.visible {
+            display: flex;
+        }
+
+        .export-btn {
+            background-color: var(--border-color);
+            color: var(--text-color);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .export-btn:hover {
+            background-color: var(--accent-color);
+            color: #0d1117;
+        }
+
+        .upload-btn {
+            background-color: var(--border-color);
+            color: var(--text-color);
+            border: none;
+            padding: 0 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .upload-btn:hover {
+            background-color: var(--accent-color);
+            color: #0d1117;
+        }
+
+        .upload-btn:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .file-info {
+            font-size: 0.8rem;
+            color: #8b949e;
+            padding: 5px 0 0 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="header-row">
+                <h1><span class="status-dot"></span>Smart Test Case Generator (Claude Opus 4.6 model)</h1>
+                <div id="export-buttons" class="export-buttons">
+                    <button class="export-btn" onclick="exportExcel()">Export Excel</button>
+                    <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+                </div>
+            </div>
+        </header>
+        <div id="chat-window">
+            <div class="message ai-message">
+                Hello! I am your AI Test Engineer. Enter a User Story below, and I will generate comprehensive test
+                cases for you.
+            </div>
+        </div>
+        <div class="input-area">
+            <form id="chat-form">
+                <textarea id="user-input" placeholder="As a user, I want..." required></textarea>
+                <button type="submit" id="send-btn">Generate</button>
+            </form>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                <input type="file" id="file-input" accept=".pdf,.docx,.xlsx,.xls" hidden>
+                <button type="button" class="upload-btn" id="upload-btn" onclick="document.getElementById('file-input').click()">&#128206; Upload PRD</button>
+                <span id="file-info" class="file-info"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script>
+        let lastTestCases = null;
+
+        const chatWindow = document.getElementById('chat-window');
+        const form = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // Add User Message
+            addMessage(text, 'user-message');
+            userInput.value = '';
+
+            // Show Loading
+            const loadingId = addMessage('Analyzing requirements and generating test cases<span class="loading-dots"></span>', 'ai-message');
+            sendBtn.disabled = true;
+
+            // Timeout warning
+            const timeoutWarning = setTimeout(() => {
+                const msg = document.getElementById(loadingId);
+                if (msg) msg.innerHTML += '<br><br><small><em>(Local LLM is crunching... this can take 30-60s depending on your hardware. Please wait.)</em></small>';
+            }, 8000);
+
+            try {
+                const response = await fetch('http://localhost:8000/generate', {
+
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_story: text })
+                });
+
+                const data = await response.json();
+
+                // Remove Loading
+                document.getElementById(loadingId).remove();
+
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`, 'ai-message');
+                } else {
+                    renderTestCases(data);
+                }
+
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                addMessage(`Connection Error: Ensure backend is running. ${err.message}`, 'ai-message');
+            } finally {
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        });
+
+        function addMessage(html, className) {
+            const div = document.createElement('div');
+            div.className = `message ${className}`;
+            div.innerHTML = html;
+            div.id = 'msg-' + Date.now();
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return div.id;
+        }
+
+        function renderTestCases(data) {
+            // Store for export
+            lastTestCases = data;
+            document.getElementById('export-buttons').classList.add('visible');
+
+            let html = `<strong>Coverage Summary:</strong> ${data.summary || 'Generated Test Cases'}<br><br>`;
+
+            if (data.test_cases && Array.isArray(data.test_cases)) {
+                data.test_cases.forEach(tc => {
+                    html += `
+                        <div class="tc-card">
+                            <div class="tc-header">
+                                <span>${tc.id}</span>
+                                <span class="tc-type type-${(tc.type || '').replace(/\s+/g, '').toLowerCase()}">${tc.type}</span>
+                            </div>
+                            <div class="tc-title">${tc.title}</div>
+                            <small>Steps:</small>
+                            <ol style="margin: 5px 0 10px 20px; padding: 0;">
+                                ${(tc.steps || []).map(s => `<li>${s}</li>`).join('')}
+                            </ol>
+                            <small>Expected: ${tc.expected_result}</small>
+                        </div>
+                    `;
+                });
+            } else {
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+
+            addMessage(html, 'ai-message');
+        }
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                form.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // File upload handling
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileInfo = document.getElementById('file-info');
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            fileInfo.textContent = `Selected: ${file.name}`;
+            addMessage(`Uploading PRD: ${file.name}`, 'user-message');
+
+            const loadingId = addMessage('Extracting content and generating test cases<span class="loading-dots"></span>', 'ai-message');
+            sendBtn.disabled = true;
+            uploadBtn.disabled = true;
+
+            const timeoutWarning = setTimeout(() => {
+                const msg = document.getElementById(loadingId);
+                if (msg) msg.innerHTML += '<br><br><small><em>(Processing document and generating test cases... this can take 30-60s. Please wait.)</em></small>';
+            }, 8000);
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('http://localhost:8000/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                clearTimeout(timeoutWarning);
+                document.getElementById(loadingId).remove();
+
+                if (data.detail) {
+                    addMessage(`Error: ${data.detail}`, 'ai-message');
+                } else {
+                    renderTestCases(data);
+                }
+            } catch (err) {
+                clearTimeout(timeoutWarning);
+                document.getElementById(loadingId).remove();
+                addMessage(`Upload Error: ${err.message}`, 'ai-message');
+            } finally {
+                sendBtn.disabled = false;
+                uploadBtn.disabled = false;
+                fileInput.value = '';
+                fileInfo.textContent = '';
+            }
+        });
+
+        function tcToRows(data) {
+            return data.test_cases.map(tc => ({
+                'ID': tc.id,
+                'Title': tc.title,
+                'Type': tc.type,
+                'Preconditions': tc.preconditions,
+                'Steps': (tc.steps || []).join('\n'),
+                'Expected Result': tc.expected_result
+            }));
+        }
+
+        function exportExcel() {
+            if (!lastTestCases) return;
+            const rows = tcToRows(lastTestCases);
+            const ws = XLSX.utils.json_to_sheet(rows);
+            ws['!cols'] = [{ wch: 8 }, { wch: 30 }, { wch: 12 }, { wch: 30 }, { wch: 40 }, { wch: 30 }];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Test Cases');
+            XLSX.writeFile(wb, 'test_cases.xlsx');
+        }
+
+        function exportCSV() {
+            if (!lastTestCases) return;
+            const rows = tcToRows(lastTestCases);
+            const headers = Object.keys(rows[0]);
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => headers.map(h => `"${(row[h] || '').replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'test_cases.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+
+</html>
