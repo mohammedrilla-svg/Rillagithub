@@ -1,92 +1,79 @@
-# 🚀 Local Test Case Generator (B.L.A.S.T. Protocol)
+# Smart Test Case Generator
 
-An agentic AI tool that generates comprehensive test cases from User Stories using a **Local LLM** (Llama 3.2) via Ollama. Built with privacy and determinism in mind, ensuring no data leaves your machine.
+An AI-powered tool that generates comprehensive QA test cases from User Stories or PRD documents. Supports multiple LLM providers (Claude, Gemini, Ollama) — configurable via a single `.env` file.
 
-## 🏗️ Architecture
+## Features
 
-The system follows a strict 3-layer architecture to separate concerns and ensure reliability.
+*   **Multi-LLM Support**: Switch between Claude, Gemini, or Ollama by changing `.env`
+*   **File Upload**: Upload PRD documents (PDF, Word, Excel) to generate test cases
+*   **Export**: Download test cases as Excel (.xlsx) or CSV
+*   **Structured Output**: JSON test cases with Functional, Negative, Boundary, and Edge Case categorization
+*   **Dark-themed UI**: Chat-like interface for easy interaction
 
-```mermaid
-flowchart LR
-    subgraph Client ["🖥️ Layer 4: Client"]
-        User[User] <--> |Input/View| UI[Frontend UI]
-    end
+## Quick Start
 
-    subgraph Server ["⚙️ Layer 2: Navigation"]
-        UI <--> |HTTP POST /generate| API[FastAPI Backend]
-    end
-
-    subgraph Core ["🛠️ Layer 3: Tools"]
-        API --> |Executes| Tool[Generator Tool]
-        Tool --> |Validates| Schema[JSON Schema]
-    end
-
-    subgraph AI ["🧠 Inference Engine"]
-        Tool <--> |Generate| Ollama[(Ollama Service)]
-        Ollama -.-> |Runs| Model[Llama 3.2]
-    end
-
-    style Client fill:#e1f5fe,stroke:#01579b
-    style Server fill:#fff3e0,stroke:#e65100
-    style Core fill:#f3e5f5,stroke:#4a148c
-    style AI fill:#e8f5e9,stroke:#1b5e20
+### 1. Clone and Install
+```bash
+git clone https://github.com/mohammedrilla-svg/Rillagithub.git
+cd Rillagithub
+pip install -r backend/requirements.txt
 ```
 
-## ✨ Features
-
-*   **🔒 Local & Private**: All processing happens on your machine using Ollama.
-*   **⚡ Real-time UI**: Dark-themed, chat-like interface for easy interaction.
-*   **📝 Structured Output**: Strictly formatted JSON test cases with Positive, Negative, and Edge case categorization.
-*   **🛠️ Determinstic Tooling**: Python-based tool logic ensures consistent prompting and error handling.
-
-## 📋 Prerequisites
-
-*   [Ollama](https://ollama.com/) installed and running.
-*   Python 3.10+
-*   **Model**: `llama3.2` pulled (`ollama pull llama3.2`).
-
-## 🚀 Quick Start
-
-### 1. Start the System (Recommended)
-We have included a "Turbo" script that sets up everything (Backend + Frontend) in the background.
+### 2. Configure LLM Provider
+Copy `.env.example` to `.env` and set your provider:
 
 ```bash
-chmod +x start_system.sh
+cp .env.example .env
+```
+
+**For Claude:**
+```
+LLM_PROVIDER=claude
+LLM_MODEL=claude-opus-4-6
+ANTHROPIC_API_KEY=your-key-here
+```
+
+**For Gemini:**
+```
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-2.0-flash
+GEMINI_API_KEY=your-key-here
+```
+
+**For Ollama (local, free):**
+```
+LLM_PROVIDER=ollama
+LLM_MODEL=llama3.2
+```
+Requires [Ollama](https://ollama.com/) installed with `ollama pull llama3.2`.
+
+### 3. Start the System
+```bash
 ./start_system.sh
 ```
 
-**Access the App:**
-*   **Frontend**: [http://localhost:3000](http://localhost:3000)
-*   **Backend**: [http://localhost:8000](http://localhost:8000)
+*   **Frontend**: http://localhost:3000
+*   **Backend**: http://localhost:8000
 
-### 2. Manual Startup
-
-**Backend:**
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app:app --reload
-```
-
-**Frontend:**
-```bash
-cd frontend
-python -m http.server 3000
-```
-
-## 📂 Project Structure
+## Project Structure
 
 ```
-├── architecture/       # Layer 1: SOPs and Architecture definitions
-├── backend/            # Layer 2: FastAPI Application
-├── frontend/           # Layer 4: User Interface (Vanilla HTML/JS)
-├── tools/              # Layer 3: Deterministic Python Tools
-├── start_system.sh     # Deployment Script
-├── BLAST.md           # Master System Prompt & Protocol
-├── gemini.md           # Project Constitution (Data Schemas)
-└── task_plan.md        # Execution Plan
+├── backend/app.py              # FastAPI backend (/generate, /upload, /health)
+├── frontend/index.html         # Chat UI with file upload and export
+├── tools/
+│   ├── generate_test_cases.py  # Core test case generation logic
+│   ├── llm_config.py           # Multi-LLM provider configuration
+│   └── extract_text.py         # PDF, Word, Excel text extraction
+├── .env.example                # LLM config template
+└── start_system.sh             # One-command startup script
 ```
 
-## 🛡️ License
+## Technology Stack
 
-This project is part of the **AI Tester Blueprint** series.
+| Layer | Technology |
+|---|---|
+| Frontend | Vanilla HTML + CSS + JavaScript |
+| Backend | Python + FastAPI |
+| LLM | Claude API / Gemini API / Ollama (configurable) |
+| File Parsing | pdfplumber, python-docx, openpyxl |
+| Excel Export | SheetJS (client-side) |

@@ -18,20 +18,29 @@ kill_port() {
     fi
 }
 
-echo "🚀 Deploying B.L.A.S.T. Local Test Case Generator..."
+echo "🚀 Deploying Smart Test Case Generator..."
+
+# Load .env if exists
+if [ -f "$PROJECT_DIR/.env" ]; then
+    export $(grep -v '^#' "$PROJECT_DIR/.env" | xargs)
+fi
 
 # 1. Cleanup existing ports
 echo "Checking ports..."
 kill_port $BACKEND_PORT
 kill_port $FRONTEND_PORT
 
-# 2. Check Ollama
-if ! pgrep -x "ollama" > /dev/null; then
-    echo "⚠️  Ollama is not running. Starting Ollama serve..."
-    ollama serve &
-    sleep 5
+# 2. Check LLM Provider
+if [ "$LLM_PROVIDER" = "ollama" ] || [ -z "$LLM_PROVIDER" ]; then
+    if ! pgrep -x "ollama" > /dev/null; then
+        echo "⚠️  Ollama is not running. Starting Ollama serve..."
+        ollama serve &
+        sleep 5
+    else
+        echo "✅ Ollama is running."
+    fi
 else
-    echo "✅ Ollama is running."
+    echo "✅ Using cloud LLM provider: $LLM_PROVIDER"
 fi
 
 # 3. Start Backend

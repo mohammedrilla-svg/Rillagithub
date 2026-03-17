@@ -4,26 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-B.L.A.S.T. (Blueprint, Link, Architect, Stylize, Trigger) Local Test Case Generator — an agentic AI tool that generates structured QA test cases from user stories using a local LLM (Llama 3.2) via Ollama. All inference is local; no external AI APIs are used.
+Smart Test Case Generator — an AI-powered tool that generates structured QA test cases from user stories or PRD documents. Supports multiple LLM providers (Claude, Gemini, Ollama) configurable via a single `.env` file.
 
 ## Architecture
 
-The system follows a 3-layer architecture:
-
-- **Layer 1 — Architecture** (`architecture/`): SOPs in Markdown defining goals, inputs, tool logic, and edge cases. Update SOPs before updating code.
-- **Layer 2 — Navigation** (`backend/app.py`): FastAPI backend that routes requests between the frontend and tools. Single endpoint `POST /generate` plus `GET /health`.
-- **Layer 3 — Tools** (`tools/`): Deterministic Python scripts. `generate_test_cases.py` assembles prompts, calls `ollama.generate()`, parses JSON output. `verify_ollama.py` is a connectivity handshake script.
-- **Frontend** (`frontend/index.html`): Vanilla HTML/JS/CSS dark-themed chat UI served via Python's `http.server`. Calls backend at `localhost:8000`.
-
-Key constraint: `gemini.md` is the **Project Constitution** — it defines data schemas, behavioral rules, and architectural invariants. Schema changes must be reflected there first.
+- **Frontend** (`frontend/index.html`): Vanilla HTML/JS/CSS dark-themed chat UI. Supports text input, file upload (PDF, Word, Excel), and export (Excel, CSV).
+- **Backend** (`backend/app.py`): FastAPI app with two endpoints — `POST /generate` for text input, `POST /upload` for file uploads, `GET /health` for status.
+- **Tools** (`tools/`):
+  - `generate_test_cases.py` — Core tool that builds the QA prompt and calls the configured LLM
+  - `llm_config.py` — Generic LLM provider config supporting Claude, Gemini, and Ollama
+  - `extract_text.py` — Extracts text from PDF (pdfplumber), Word (python-docx), Excel (openpyxl)
+- **Config** (`.env`): Single file to switch LLM provider, model, API keys, and endpoint URLs
 
 ## Commands
 
-### Start everything (backend + frontend + Ollama check)
+### Start the system
 ```bash
 ./start_system.sh
 ```
-Note: `start_system.sh` expects a venv at `../.venv/bin/python`. Adjust `VENV_PYTHON` if your setup differs.
 
 ### Manual startup
 ```bash
@@ -34,30 +32,49 @@ cd backend && pip install -r requirements.txt && uvicorn app:app --reload
 cd frontend && python -m http.server 3000
 ```
 
-### Run the test case generator standalone
+### Stop servers
 ```bash
-python tools/generate_test_cases.py "As a user, I want to reset my password"
+lsof -ti:8000 -ti:3000 | xargs kill -9
 ```
 
-### Verify Ollama connectivity
+## LLM Configuration
+
+All LLM settings are in `.env` (see `.env.example`):
+
 ```bash
-python tools/verify_ollama.py
+# Claude
+LLM_PROVIDER=claude
+LLM_MODEL=claude-opus-4-6
+ANTHROPIC_API_KEY=your-key
+
+# Gemini
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-2.0-flash
+GEMINI_API_KEY=your-key
+
+# Ollama (local)
+LLM_PROVIDER=ollama
+LLM_MODEL=llama3.2
 ```
+
+No code changes needed to switch providers — just update `.env` and restart.
 
 ## Dependencies
 
-Python 3.10+, Ollama with `llama3.2` model pulled (`ollama pull llama3.2`). Python packages: `fastapi`, `uvicorn`, `ollama`, `pydantic` (see `backend/requirements.txt`).
+Python 3.10+. Packages: `fastapi`, `uvicorn`, `requests`, `pydantic`, `python-dotenv`, `python-multipart`, `pdfplumber`, `python-docx`, `openpyxl` (see `backend/requirements.txt`).
 
 ## Data Flow
 
-1. User enters a user story in the chat UI
-2. Frontend POSTs `{ "user_story": "...", "model": "llama3.2" }` to `localhost:8000/generate`
-3. Backend calls `tools/generate_test_cases.py` which prompts Ollama with a system prompt (Senior QA Tester role) + the user story
-4. Ollama returns JSON with `test_cases` array (each having id, title, preconditions, steps, expected_result, type) and a `summary`
-5. Test case types: `Positive`, `Negative`, `EdgeCase`
+1. User enters a user story or uploads a PRD file (PDF/Word/Excel)
+2. For file uploads: `extract_text.py` extracts text content
+3. Text is sent to `generate_test_cases.py` which builds a QA prompt
+4. `llm_config.py` routes the request to the configured LLM provider
+5. LLM returns JSON with `test_cases` array (id, title, preconditions, steps, expected_result, type)
+6. Test case types: Functional, Negative, Boundary, Edge Case
+7. Frontend renders color-coded cards; user can export to Excel or CSV
 
-## Key Design Rules
+## Key Design Decisions
 
-- **Local-first**: Only `localhost:11434` (Ollama) for inference. No external AI API calls.
-- **Data-first**: Define JSON schemas in `gemini.md` before coding. The prompt template is fixed; users can only change the user story input, not the system instructions.
-- **Planning files**: `task_plan.md` (phases/checklists), `findings.md` (research/constraints), `progress.md` (log of work done). Update these after meaningful changes.
+- **No Anthropic SDK** — Claude API calls use raw HTTP via `requests` library
+- **Single config file** — `.env` controls all LLM settings
+- **Client-side export** — Excel/CSV export runs in browser using SheetJS, no backend needed
